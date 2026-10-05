@@ -1,18 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  Alert,
 } from "react-native";
 
 export default function JobDetailsScreen({ route }) {
+  const [applied, setApplied] = useState(false);
+
   const job = route?.params?.job;
 
   if (!job) {
     return (
-      <View style={styles.container}>
+      <View style={styles.errorContainer}>
         <Text style={styles.errorTitle}>
           Job details not found
         </Text>
@@ -24,29 +25,58 @@ export default function JobDetailsScreen({ route }) {
     );
   }
 
+  const rawJob = job.raw || {};
+  const rawDescription =
+    rawJob.description ||
+    rawJob.requirements ||
+    rawJob.summary ||
+    "This is a job opportunity. Review the listed requirements and prepare your application.";
+
+  const descriptionText =
+    typeof rawDescription === "string"
+      ? rawDescription
+      : typeof rawDescription === "object"
+        ? rawDescription.text || JSON.stringify(rawDescription)
+        : String(rawDescription);
+
+  const cleanDescription = String(descriptionText)
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const shortDescription = cleanDescription
+    .split(/(?<=[.!?])\s+/)
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(" ") || cleanDescription;
+
   const handleApply = () => {
-    Alert.alert(
-      "Application Started",
-      `You selected the ${job.title} position at ${job.company}.`
-    );
+    setApplied(true);
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.emoji}>💼</Text>
 
-      <Text style={styles.title}>
-        {job.title}
-      </Text>
+      {/* Job Header */}
+      <View style={styles.header}>
+        <Text style={styles.emoji}>💼</Text>
 
-      <Text style={styles.company}>
-        {job.company}
-      </Text>
+        <Text style={styles.title}>
+          {job.title}
+        </Text>
 
-      <Text style={styles.location}>
-        📍 {job.location}
-      </Text>
+        <Text style={styles.company}>
+          {job.company}
+        </Text>
 
+        <Text style={styles.location}>
+          📍 {job.location}
+        </Text>
+      </View>
+
+      {/* Skills */}
       <View style={styles.section}>
         <Text style={styles.heading}>
           Required Skills
@@ -57,27 +87,47 @@ export default function JobDetailsScreen({ route }) {
         </Text>
       </View>
 
+      {/* About Job */}
       <View style={styles.section}>
         <Text style={styles.heading}>
           About this Job
         </Text>
 
         <Text style={styles.description}>
-          This is a developer job opportunity.
-          You can review the requirements and
-          prepare your application.
+          {shortDescription}
         </Text>
       </View>
 
+      {/* Apply Button */}
       <TouchableOpacity
-        style={styles.button}
+        style={[
+          styles.button,
+          applied && styles.appliedButton,
+        ]}
         onPress={handleApply}
         activeOpacity={0.7}
       >
         <Text style={styles.buttonText}>
-          Apply Now
+          {applied
+            ? "Application Submitted ✓"
+            : "Apply Now"}
         </Text>
       </TouchableOpacity>
+
+      {/* Success Message */}
+      {applied && (
+        <View style={styles.successBox}>
+          <Text style={styles.successTitle}>
+            Application Started 🎉
+          </Text>
+
+          <Text style={styles.successText}>
+            Your application for {job.title} at{" "}
+            {job.company} has been started successfully.
+          </Text>
+        </View>
+      )}
+
     </View>
   );
 }
@@ -87,6 +137,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8FAFC",
     padding: 24,
+  },
+
+  header: {
+    marginBottom: 20,
   },
 
   emoji: {
@@ -116,7 +170,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     padding: 18,
     borderRadius: 15,
-    marginTop: 20,
+    marginBottom: 18,
   },
 
   heading: {
@@ -128,7 +182,7 @@ const styles = StyleSheet.create({
 
   skills: {
     fontSize: 15,
-    color: "#7C3AED",
+    color: "#240be0",
     fontWeight: "600",
   },
 
@@ -139,17 +193,50 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    backgroundColor: "#7C3AED",
-    padding: 15,
+    backgroundColor: "#240be0",
+    padding: 16,
     borderRadius: 12,
-    marginTop: 25,
+    marginTop: 5,
     alignItems: "center",
+  },
+
+  appliedButton: {
+    backgroundColor: "#10B981",
   },
 
   buttonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",
+  },
+
+  successBox: {
+    backgroundColor: "#ECFDF5",
+    borderWidth: 1,
+    borderColor: "#10B981",
+    padding: 18,
+    borderRadius: 15,
+    marginTop: 18,
+  },
+
+  successTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#047857",
+    marginBottom: 8,
+  },
+
+  successText: {
+    fontSize: 15,
+    color: "#065F46",
+    lineHeight: 22,
+  },
+
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
   },
 
   errorTitle: {
@@ -162,5 +249,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#64748B",
     marginTop: 10,
+    textAlign: "center",
   },
 });
